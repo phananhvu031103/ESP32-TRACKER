@@ -13,6 +13,7 @@ class TrackerData {
   final bool mqttConnected;
   final bool strongMotion;
   final DateTime timestamp;
+  final DateTime serverTime; // Thời gian backend nhận MQTT (GMT+7)
 
   TrackerData({
     required this.latitude,
@@ -27,6 +28,7 @@ class TrackerData {
     required this.mqttConnected,
     required this.strongMotion,
     required this.timestamp,
+    required this.serverTime,
   });
 
   factory TrackerData.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,25 @@ class TrackerData {
       parsedTimestamp = DateTime.now();
     }
 
+    // Parse server_time (thời gian backend nhận MQTT) - chuyển từ UTC sang GMT+7
+    DateTime parsedServerTime;
+    if (json['server_time'] != null) {
+      try {
+        // Parse UTC time (backend gửi là UTC)
+        final utcTime = DateTime.parse(json['server_time']).toUtc();
+
+        // ✅ Ép buộc chuyển sang GMT+7 (không phụ thuộc timezone thiết bị)
+        parsedServerTime = utcTime.add(const Duration(hours: 7));
+
+        print('[TrackerData] UTC: $utcTime → GMT+7: $parsedServerTime');
+      } catch (e) {
+        print('[TrackerData] Error parsing server_time: $e');
+        parsedServerTime = DateTime.now();
+      }
+    } else {
+      parsedServerTime = DateTime.now();
+    }
+
     return TrackerData(
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
@@ -77,6 +98,7 @@ class TrackerData {
           json['mqtt_connected'] == 1 || json['mqtt_connected'] == true,
       strongMotion: json['strong_motion'] == 1 || json['strong_motion'] == true,
       timestamp: parsedTimestamp,
+      serverTime: parsedServerTime,
     );
   }
 
@@ -111,6 +133,7 @@ class TrackerData {
       'mqtt_connected': mqttConnected ? 1 : 0,
       'strong_motion': strongMotion ? 1 : 0,
       'timestamp': timestamp.toIso8601String(),
+      'server_time': serverTime.toIso8601String(),
     };
   }
 

@@ -749,7 +749,7 @@ class _TrackerHomePageState extends State<TrackerHomePage> {
               Expanded(
                 child: _buildStatusItem(
                   'Cập nhật',
-                  _formatTime(data.timestamp),
+                  _formatTime(data.serverTime),
                   Icons.update,
                   Colors.blue,
                 ),
@@ -925,8 +925,13 @@ class _TrackerHomePageState extends State<TrackerHomePage> {
   }
 
   String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
+    // Chuyển cả 2 về UTC để so sánh chính xác
+    final nowUTC = DateTime.now().toUtc();
+    final serverTimeUTC = time.subtract(
+      const Duration(hours: 7),
+    ); // time đang là GMT+7, convert về UTC
+
+    final diff = nowUTC.difference(serverTimeUTC);
 
     if (diff.inSeconds < 60) {
       return '${diff.inSeconds}s trước';
